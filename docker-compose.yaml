@@ -5,10 +5,13 @@
       context: .
       dockerfile: Dockerfile
     
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - iotcontrolservice-network
-
-
 networks:
   iotcontrolservice-network:
     external: true
