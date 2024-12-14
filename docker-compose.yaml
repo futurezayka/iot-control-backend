@@ -1,0 +1,14 @@
+﻿services:
+  iotcontrolservice:
+    image: iotcontrolservice
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    networks:
+      - iotcontrolservice-network
+
+
+networks:
+  iotcontrolservice-network:
+    external: true
