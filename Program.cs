@@ -1,7 +1,9 @@
+using IotControlService.Filters;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers(options => { options.Filters.Add<RequestResponseLoggingFilter>(); });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "IoT Control API", Version = "v1" }));
 
@@ -17,4 +19,5 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.MapControllers();
 app.Run();
