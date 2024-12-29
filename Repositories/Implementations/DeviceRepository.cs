@@ -12,6 +12,5 @@ public class DeviceRepository: Repository<Device>
     public async Task<List<Device>> GetAllByUserIdAsync(Guid userId)
     {
         return await DbContext.Devices.Where(d => d.UserId == userId).ToListAsync();
-    }
-    
+    }    
 }

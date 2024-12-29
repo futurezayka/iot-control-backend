@@ -1,4 +1,5 @@
 ﻿services:
+  
   iotcontrolservice:
     image: iotcontrolservice
     build:
@@ -12,6 +13,21 @@
       - ASPNETCORE_ENVIRONMENT=Development
     networks:
       - iotcontrolservice-network
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password123$
+      POSTGRES_DB: IotControlServiceDb
+    ports:
+      - "5432:5432"
+    networks:
+      - iotcontrolservice-network
+
 networks:
   iotcontrolservice-network:
     external: true
