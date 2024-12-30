@@ -11,6 +11,16 @@ public class DeviceRepository: Repository<Device>
     
     public async Task<List<Device>> GetAllByUserIdAsync(Guid userId)
     {
-        return await DbContext.Devices.Where(d => d.UserId == userId).ToListAsync();
+        var devices = await DbContext.Devices
+            .Include(d => d.DeviceData)
+            .Where(d => d.UserId == userId)
+            .ToListAsync();
+        
+        devices.ForEach(d => d.DeviceData = d.DeviceData
+            .OrderByDescending(dd => dd.Date)
+            .Take(50)
+            .ToList());
+
+        return devices;
     }    
 }

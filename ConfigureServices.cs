@@ -1,7 +1,9 @@
-﻿using IotControlService.Models;
+﻿using IotControlService.Jobs;
+using IotControlService.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Quartz;
 
 namespace IotControlService
 {
@@ -12,11 +14,11 @@ namespace IotControlService
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(c =>
                 c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "IoT Control API",
-                    Version = "v1"
-                }
-            ));
+                    {
+                        Title = "IoT Control API",
+                        Version = "v1"
+                    }
+                ));
         }
 
         public static void SetUpIdentity(this IServiceCollection services, IConfigurationManager config)
@@ -49,6 +51,12 @@ namespace IotControlService
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "IoT Control API v1");
                 options.RoutePrefix = "docs";
             });
+        }
+
+        public static void SetUpJobs(this IServiceCollection services)
+        {
+            services.AddQuartz();
+            services.AddQuartzHostedService();
         }
     }
 }

@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
 using IotControlService;
 using IotControlService.Filters;
+using IotControlService.Helpers;
 using IotControlService.Repositories.Implementations;
 using IotControlService.Repositories.Interfaces;
+using IotControlService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -17,8 +19,16 @@ builder.Services.AddControllers(options => { options.Filters.Add<RequestResponse
 
 builder.Services.SetUpSwagger();
 builder.Services.SetUpIdentity(config);
+builder.Services.SetUpJobs();
 
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
+builder.Services.AddTransient<JobHelper>();
+builder.Services.AddScoped<RabbitMqService>(provider => RabbitMqService.CreateAsync(
+    provider.GetRequiredService<IUnitOfWork>(),
+    config["RabbitMq:HostName"]!,
+    config["RabbitMq:UserName"]!,
+    config["RabbitMq:Password"]!
+).GetAwaiter().GetResult());
 
 var app = builder.Build();
 
