@@ -23,4 +23,11 @@ public class DeviceRepository: Repository<Device>
 
         return devices;
     }    
+    
+    public new async Task<Device?> GetByIdAsync(Guid deviceId)
+    {
+        return await DbContext.Devices
+            .Include(d => d.DeviceData)
+            .FirstOrDefaultAsync(d =>  d.Id == deviceId);
+    }
 }

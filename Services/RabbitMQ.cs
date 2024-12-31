@@ -12,15 +12,14 @@ namespace IotControlService.Services
         private IConnection? _connection;
         private IChannel? _channel;
         private IUnitOfWork _unitOfWork;
-        
+
         public static async Task<RabbitMqService> CreateAsync(
             IUnitOfWork unitOfWork,
             string hostName = "rabbitmq",
             string userName = "rmuser",
             string password = "rmpassword"
-            )
+        )
         {
-            Console.WriteLine($"[*] Connected to RabbitMQ at {hostName} as {userName}.");
             if (hostName == null) throw new ArgumentNullException(nameof(hostName));
             var instance = new RabbitMqService();
             instance._unitOfWork = unitOfWork;
@@ -76,7 +75,10 @@ namespace IotControlService.Services
             );
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
-
+            
+            await _channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer,
+                cancellationToken: cancellationToken);
+            
             consumer.ReceivedAsync += async (model, ea) =>
             {
                 try
@@ -91,7 +93,8 @@ namespace IotControlService.Services
                     })!;
                     deviceData.DeviceId = Guid.Parse(deviceId);
                     deviceData.Date = deviceData.Date.ToUniversalTime();
-                    Console.WriteLine($"[x] Parsed data for device {deviceData.DeviceId}: {deviceData.Telemetry}, {deviceData.Date}");
+                    Console.WriteLine(
+                        $"[x] Parsed data for device {deviceData.DeviceId}: {deviceData.Telemetry}, {deviceData.Date}");
                     await _unitOfWork.DeviceDataRepository.AddAsync(deviceData);
                     await _unitOfWork.SaveAsync();
                     await Task.CompletedTask;
@@ -102,8 +105,6 @@ namespace IotControlService.Services
                 }
             };
 
-            await _channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer,
-                cancellationToken: cancellationToken);
 
             Console.WriteLine($"[*] Waiting for messages in {queueName}.");
 

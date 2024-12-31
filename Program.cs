@@ -5,6 +5,7 @@ using IotControlService.Helpers;
 using IotControlService.Repositories.Implementations;
 using IotControlService.Repositories.Interfaces;
 using IotControlService.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -17,10 +18,35 @@ builder.Services.AddControllers(options => { options.Filters.Add<RequestResponse
         opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.Cookie.Name = "UserLoginCookie";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = new TimeSpan(24, 0, 0);
+        options.Events.OnRedirectToLogin = (context) =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        
+        options.Cookie.HttpOnly = false;
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None;
+    });
+
 builder.Services.SetUpSwagger();
 builder.Services.SetUpIdentity(config);
 builder.Services.SetUpJobs();
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddTransient<JobHelper>();
 builder.Services.AddScoped<RabbitMqService>(provider => RabbitMqService.CreateAsync(
@@ -33,7 +59,7 @@ builder.Services.AddScoped<RabbitMqService>(provider => RabbitMqService.CreateAs
 var app = builder.Build();
 
 app.Services.DatabaseMigrate();
-
+app.UseCors("AllowSpecificOrigins");
 app.UseAuthentication();
 app.UseAuthorization();
 

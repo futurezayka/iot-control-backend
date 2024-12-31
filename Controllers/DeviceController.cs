@@ -1,5 +1,7 @@
 ﻿using System.Security.Claims;
 using IotControlService.DTO;
+using IotControlService.Helpers;
+using IotControlService.Models;
 using IotControlService.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,16 +14,19 @@ namespace IotControlService.Controllers
     public class DeviceController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly JobHelper _jobHelper;
 
-        public DeviceController(IUnitOfWork unitOfWork)
+        public DeviceController(IUnitOfWork unitOfWork, JobHelper jobHelper)
         {
             _unitOfWork = unitOfWork;
+            _jobHelper = jobHelper;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> GetAllByUserId()
         {
-            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);;
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            ;
             var devices = await _unitOfWork.DeviceRepository.GetAllByUserIdAsync(userId);
             return Ok(devices);
         }
@@ -34,6 +39,7 @@ namespace IotControlService.Controllers
             {
                 return NotFound();
             }
+
             return Ok(device);
         }
 
@@ -44,10 +50,16 @@ namespace IotControlService.Controllers
             {
                 return BadRequest(ModelState);
             }
+
             var device = deviceDTO.ToDevice();
             device.UserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             await _unitOfWork.DeviceRepository.AddAsync(device);
             await _unitOfWork.SaveAsync();
+            if (device.Status == DeviceStatus.On)
+            {
+                await _jobHelper.StartCollectingData(device.Id.ToString());
+            }
+
             return Ok(device);
         }
 
@@ -65,6 +77,18 @@ namespace IotControlService.Controllers
             {
                 return NotFound();
             }
+            
+            if (existingDevice.Status != deviceDTO.Status)
+            {
+                if (deviceDTO.Status == DeviceStatus.Off)
+                {
+                    await _jobHelper.StopCollectingData(existingDevice.Id.ToString());
+                }
+                else if (deviceDTO.Status == DeviceStatus.On)
+                {
+                    await _jobHelper.StartCollectingData(existingDevice.Id.ToString());
+                }
+            }
 
             existingDevice.Name = deviceDTO.Name;
             existingDevice.Type = deviceDTO.Type;
@@ -72,6 +96,7 @@ namespace IotControlService.Controllers
 
             _unitOfWork.DeviceRepository.Update(existingDevice);
             await _unitOfWork.SaveAsync();
+
 
             return Ok(existingDevice);
         }
@@ -84,8 +109,18 @@ namespace IotControlService.Controllers
             {
                 return NotFound();
             }
+
             _unitOfWork.DeviceRepository.Remove(device);
             await _unitOfWork.SaveAsync();
+            try
+            {
+                await _jobHelper.StopCollectingData(device.Id.ToString());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
             return Ok(device);
         }
     }
