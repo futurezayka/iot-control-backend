@@ -40,7 +40,7 @@ namespace IotControlService.Services
             _channel = await _connection.CreateChannelAsync();
         }
 
-        public async Task SendCommandAsync(string deviceId, string command)
+        public async Task SendCommandAsync(string deviceId, string command, string deviceType)
         {
             if (_channel == null) throw new InvalidOperationException("RabbitMqService is not initialized.");
 
@@ -50,7 +50,7 @@ namespace IotControlService.Services
                 autoDelete: false,
                 arguments: null);
 
-            var message = JsonSerializer.Serialize(new { type = command, device_id = deviceId, device_type = "light" });
+            var message = JsonSerializer.Serialize(new { type = command, device_id = deviceId, device_type = deviceType });
             var body = Encoding.UTF8.GetBytes(message);
 
             await _channel.BasicPublishAsync(exchange: "",

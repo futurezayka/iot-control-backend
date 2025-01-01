@@ -55,9 +55,10 @@ namespace IotControlService.Controllers
             device.UserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             await _unitOfWork.DeviceRepository.AddAsync(device);
             await _unitOfWork.SaveAsync();
+            Console.WriteLine(device.Type.ToString());
             if (device.Status == DeviceStatus.On)
             {
-                await _jobHelper.StartCollectingData(device.Id.ToString());
+                await _jobHelper.StartCollectingData(device.Id.ToString(), device.Type.ToString());
             }
 
             return Ok(device);
@@ -82,11 +83,11 @@ namespace IotControlService.Controllers
             {
                 if (deviceDTO.Status == DeviceStatus.Off)
                 {
-                    await _jobHelper.StopCollectingData(existingDevice.Id.ToString());
+                    await _jobHelper.StopCollectingData(existingDevice.Id.ToString(), existingDevice.Type.ToString());
                 }
                 else if (deviceDTO.Status == DeviceStatus.On)
                 {
-                    await _jobHelper.StartCollectingData(existingDevice.Id.ToString());
+                    await _jobHelper.StartCollectingData(existingDevice.Id.ToString(), existingDevice.Type.ToString());
                 }
             }
 
@@ -114,7 +115,7 @@ namespace IotControlService.Controllers
             await _unitOfWork.SaveAsync();
             try
             {
-                await _jobHelper.StopCollectingData(device.Id.ToString());
+                await _jobHelper.StopCollectingData(device.Id.ToString(), device.Type.ToString());
             }
             catch (Exception e)
             {

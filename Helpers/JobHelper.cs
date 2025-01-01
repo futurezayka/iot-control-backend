@@ -15,11 +15,11 @@ public class JobHelper
         _rabbitMqService = rabbitMqService;
     }
 
-    public async Task StartCollectingData(string deviceId)
+    public async Task StartCollectingData(string deviceId, string deviceType)
     {
         var scheduler = await _schedulerFactory.GetScheduler();
         var jobKey = new JobKey($"ReceiveDataJob-{deviceId}");
-        await _rabbitMqService.SendCommandAsync(deviceId: deviceId, command: "start_stream");
+        await _rabbitMqService.SendCommandAsync(deviceId: deviceId, command: "start_stream", deviceType: deviceType);
         var jobDetail = JobBuilder
             .Create<ReceiveDataJob>()
             .WithIdentity(jobKey)
@@ -38,9 +38,9 @@ public class JobHelper
         await scheduler.ScheduleJob(jobDetail, trigger);
     }
 
-    public async Task StopCollectingData(string deviceId)
+    public async Task StopCollectingData(string deviceId, string deviceType)
     {
-        await _rabbitMqService.SendCommandAsync(deviceId: deviceId, command: "stop_stream");
+        await _rabbitMqService.SendCommandAsync(deviceId: deviceId, command: "stop_stream", deviceType: deviceType);
         var jobKey = new JobKey($"ReceiveDataJob-{deviceId}");
         var scheduler = await _schedulerFactory.GetScheduler();
         await scheduler.Interrupt(jobKey);
